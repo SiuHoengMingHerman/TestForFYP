@@ -2,7 +2,7 @@ import pybullet as p
 import time
 import pybullet_data
 
-physicsClient = p.connect(p.GUI)  # Setup GUI for the physics engine
+physicsClient = p.connect(p.GUI)  # Setup GUI
 
 # ______________________________Set environment__________________________________
 p.setGravity(0, 0, -9.81)
@@ -14,8 +14,7 @@ p.setAdditionalSearchPath(pybullet_data.getDataPath())
 planeId = p.loadURDF("plane.urdf")
 
 # ______________________________Loading in table__________________________________
-# Load a table model and set its position
-# Assuming you have a table URDF file, adjust the path as necessary
+# Setting the table's position
 tableStartPos = [0, 0, 0]
 tableStartOrientation = p.getQuaternionFromEuler([0, 0, 0])
 
@@ -27,19 +26,19 @@ table_height = 0.76  # meters
 table_color = [0, 0, 0.8, 1]
 
 # Dimensions for the legs
-leg_height = table_height  # Legs will reach from the tabletop to the ground
-leg_width = 0.05  # 5 cm thick legs
-leg_length = 0.05  # 5 cm length legs
+leg_height = table_height
+leg_width = 0.05  # 5 cm
+leg_length = 0.05  # 5 cm
 
 # Half extents for the tabletop and legs
-table_half_extents = [table_length / 2, table_width / 2, 0.02]  # Thin tabletop
+table_half_extents = [table_length / 2, table_width / 2, 0.02]
 leg_half_extents = [leg_length / 2, leg_width / 2, leg_height / 2]
 
-# Friction coefficient
+# Adding friction coefficient
 table_friction = 0.5
 
 # Adjusted base position for the tabletop to be on top of the legs
-table_base_position = [0, 0, leg_height + 0.02 / 2]  # Adding half the thickness of the tabletop to the leg height
+table_base_position = [0, 0, leg_height + 0.02 / 2]
 
 # Create a table using a box shape
 table_collision = p.createCollisionShape(p.GEOM_BOX, halfExtents=[table_length / 2, table_width / 2, table_height / 20])
@@ -50,11 +49,11 @@ tableId = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=table_collision,
 
 
 # Function to add a leg to the table
-def add_table_leg(position):
+def add_table_leg(base_pos):
     leg_collision = p.createCollisionShape(p.GEOM_BOX, halfExtents=leg_half_extents)
     leg_visual = p.createVisualShape(p.GEOM_BOX, halfExtents=leg_half_extents, rgbaColor=[0.5, 0.3, 0.2, 1])
     p.createMultiBody(baseMass=0, baseCollisionShapeIndex=leg_collision, baseVisualShapeIndex=leg_visual,
-                      basePosition=position)
+                      basePosition=base_pos)
 
 
 # Positions of the four legs relative to the table center
@@ -74,23 +73,26 @@ tableRestitution = 0.9  # Setting a high restitution for the table to improve bo
 p.changeDynamics(tableId, -1, restitution=tableRestitution, lateralFriction=table_friction)
 
 
-# Function to add boundary lines as thin boxes, adjusted for accurate placement
-def add_boundary_line(position, half_extents, color=[1, 1, 1, 1]):
+# Function to add boundary lines as thin boxes
+def add_boundary_line(base_pos, half_extents, color=None):
+    if color is None:
+        color = [1, 1, 1, 1]
     line_collision = p.createCollisionShape(p.GEOM_BOX, halfExtents=half_extents)
     line_visual = p.createVisualShape(p.GEOM_BOX, halfExtents=half_extents, rgbaColor=color)
-    lineId = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=line_collision, baseVisualShapeIndex=line_visual,
-                               basePosition=position)
+    line_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=line_collision, baseVisualShapeIndex=line_visual,
+                                basePosition=base_pos)
+    p.changeDynamics(line_id, -1, restitution=tableRestitution, lateralFriction=table_friction)
 
 
-# Corrected boundary line dimensions and positions
-line_thickness = 0.02  # Thickness of the lines, represented as full extent for clarity
-line_offset = 0.001  # Small offset to place lines just above the table surface
+# line dimensions and positions
+line_thickness = 0.02
+line_offset = 0.001
 
-# End lines (corrected to match the width and not extend beyond the table)
+# End lines
 end_line_half_extents = [line_thickness / 2, (table_width / 2) - (line_thickness / 2), line_offset]
-# Side lines (corrected to match the length and not extend beyond the table)
+# Side lines
 side_line_half_extents = [(table_length / 2) - (line_thickness / 2), line_thickness / 2, line_offset]
-# Center line (corrected for accurate width, only spanning the table's half for doubles play)
+# Center line
 center_line_half_extents = [(table_length / 2) - (line_thickness / 2), line_thickness / 2, line_offset]
 
 # Adjusted positions to ensure lines do not extend out of the table
@@ -121,10 +123,10 @@ net_collision = p.createCollisionShape(p.GEOM_BOX, halfExtents=net_half_extents)
 net_visual = p.createVisualShape(p.GEOM_BOX, halfExtents=net_half_extents, rgbaColor=net_color)
 netId = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=net_collision, baseVisualShapeIndex=net_visual,
                           basePosition=net_base_position)
-p.changeDynamics(netId, -1, lateralFriction=net_friction)
+p.changeDynamics(netId, -1, lateralFriction=net_friction, restitution=0.1)
 # ______________________________Loading in ball__________________________________
 # Load a ping pong ball and set its position
-ballStartPos = [-1.37, 0, table_height + 0.02]
+ballStartPos = [-table_length / 2, table_width / 2, table_height + 0.5]
 ballStartOrientation = p.getQuaternionFromEuler([0, 0, 0])
 ball_mass = 0.0027
 ball_radius = 0.02
@@ -140,7 +142,7 @@ p.changeDynamics(ball_id, -1, restitution=0.9, mass=ball_mass,
 
 # ______________________________Applying force__________________________________
 # Shoot the ping pong ball by applying a force
-ballForce = [1, 0, 0]
+ballForce = [2.5, -1.3, 0.7]
 p.applyExternalForce(objectUniqueId=ball_id, linkIndex=-1, forceObj=ballForce, posObj=ballStartPos, flags=p.WORLD_FRAME)
 
 # ______________________________Start simulation__________________________________
