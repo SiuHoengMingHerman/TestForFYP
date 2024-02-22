@@ -1,3 +1,5 @@
+import random
+
 import pybullet as p
 import time
 import pybullet_data
@@ -140,7 +142,11 @@ p.changeDynamics(ball_id, -1, restitution=0.9, mass=ball_mass,
                  localInertiaDiagonal=[inertia, inertia, inertia],
                  spinningFriction=0.001, rollingFriction=0.001, lateralFriction=0.2)
 
-# ______________________________Applying force__________________________________
+# ______________________________Ball Simulation__________________________________
+def reset_ball():
+    x_pos = random.uniform(-table_length / 4, -table_length / 8)
+    y_pos = random.uniform(-table_length / 4, -table_length / 8)
+    z_pos = random.uniform(-table_length / 4, -table_length / 8)
 # Shoot the ping pong ball by applying a force
 ballForce = [2.5, -1.3, 0.7]
 p.applyExternalForce(objectUniqueId=ball_id, linkIndex=-1, forceObj=ballForce, posObj=ballStartPos, flags=p.WORLD_FRAME)
